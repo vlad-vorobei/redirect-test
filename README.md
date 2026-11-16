@@ -2,10 +2,12 @@
 
 Тестова сторінка для перевірки редіректу з in-app браузерів (LINE, Telegram, Instagram) у Safari або Chrome і роботи Autofill.
 
+`index-ua.html` — українська версія, `index.html` — англійська (на GitHub Pages: `https://<username>.github.io/inapp-redirect-test/index-en.html`). Для англійської версії завантаж у репозиторій і `index.html`.
+
 ## Як підняти на GitHub Pages
 
 1. На github.com створи новий **публічний** репозиторій, наприклад `inapp-redirect-test`. На безкоштовному акаунті Pages працює тільки з публічними репо.
-2. Завантаж у нього `index.html`:
+2. Завантаж у нього `index-ua.html`:
    - через сайт: **Add file → Upload files**, перетягни файл, **Commit changes**;
    - або з терміналу в цій папці:
      ```
@@ -18,7 +20,7 @@
      ```
 3. У репозиторії: **Settings → Pages → Build and deployment → Source: Deploy from a branch**, гілка `main`, папка `/ (root)`, **Save**.
 4. Через 1–2 хвилини сторінка буде за адресою `https://<username>.github.io/inapp-redirect-test/`. Посилання також з'явиться вгорі сторінки **Settings → Pages**.
-5. Після змін у `index.html` достатньо закомітити їх у `main`, Pages оновиться сам за хвилину.
+5. Після змін у `index-ua.html` достатньо закомітити їх у `main`, Pages оновиться сам за хвилину.
 
 ## Як тестувати
 

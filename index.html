@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="uk">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -24,46 +24,46 @@
   <p id="from-banner" class="banner" hidden></p>
 
   <section>
-    <h2>1. Браузер</h2>
-    <p>Визначено: <b id="context"></b></p>
+    <h2>1. Browser</h2>
+    <p>Detected: <b id="context"></b></p>
     <div id="ua" class="ua"></div>
-    <button class="button secondary" id="copy-ua" type="button">Скопіювати user agent</button>
+    <button class="button secondary" id="copy-ua" type="button">Copy user agent</button>
   </section>
 
   <section>
     <h2>2. Autofill</h2>
-    <p>Тапни в поле номера картки і вибери збережену картку.</p>
+    <p>Tap the card number field and pick a saved card.</p>
     <form autocomplete="on" onsubmit="return false">
-      <label for="cc-name">Ім'я на картці</label>
+      <label for="cc-name">Name on card</label>
       <input id="cc-name" name="cc-name" autocomplete="cc-name">
-      <label for="cc-number">Номер картки</label>
+      <label for="cc-number">Card number</label>
       <input id="cc-number" name="cc-number" autocomplete="cc-number" inputmode="numeric">
-      <label for="cc-exp">Термін дії</label>
+      <label for="cc-exp">Expiry date</label>
       <input id="cc-exp" name="cc-exp" autocomplete="cc-exp" placeholder="MM/YY">
       <label for="cc-csc">CVC</label>
       <input id="cc-csc" name="cc-csc" autocomplete="cc-csc" inputmode="numeric">
     </form>
-    <p>Autofill: <b id="autofill-status">ще не спрацював</b></p>
+    <p>Autofill: <b id="autofill-status">not triggered yet</b></p>
   </section>
 
   <section>
-    <h2>3. Редірект по кнопці</h2>
-    <a class="button" id="x-safari">Відкрити в Safari (x-safari-https://)</a>
-    <a class="button" id="google-chrome">Відкрити в Chrome iOS (googlechromes://)</a>
-    <a class="button" id="intent">Відкрити в Chrome Android (intent://)</a>
+    <h2>3. Redirect by tap</h2>
+    <a class="button" id="x-safari">Open in Safari (x-safari-https://)</a>
+    <a class="button" id="google-chrome">Open in Chrome iOS (googlechromes://)</a>
+    <a class="button" id="intent">Open in Chrome Android (intent://)</a>
     <a class="button" id="line-external">LINE: openExternalBrowser=1</a>
-    <button class="button secondary" id="copy-link" type="button">Скопіювати посилання</button>
-    <button class="button secondary" id="share" type="button">Поділитися (navigator.share)</button>
+    <button class="button secondary" id="copy-link" type="button">Copy link</button>
+    <button class="button secondary" id="share" type="button">Share (navigator.share)</button>
   </section>
 
   <section>
-    <h2>4. Редірект без тапу</h2>
-    <p>Відкрий цю сторінку з <code>?auto=1</code>: редірект спробує спрацювати одразу після завантаження.</p>
-    <a class="button secondary" id="auto-link">Перезавантажити з ?auto=1</a>
+    <h2>4. Redirect without a tap</h2>
+    <p>Open this page with <code>?auto=1</code>: the redirect is attempted right after load.</p>
+    <a class="button secondary" id="auto-link">Reload with ?auto=1</a>
   </section>
 
   <section>
-    <h2>Лог</h2>
+    <h2>Log</h2>
     <div id="log"></div>
   </section>
 
@@ -88,14 +88,14 @@
         if (/CriOS/.test(userAgent)) return 'Chrome iOS';
         if (/FxiOS/.test(userAgent)) return 'Firefox iOS';
         if (/EdgiOS/.test(userAgent)) return 'Edge iOS';
-        if (/Safari\/[\d.]+$/.test(userAgent)) return 'Safari (або SFSafariViewController)';
-        return 'Невідомий in-app на iOS (немає Safari/ в кінці UA)';
+        if (/Safari\/[\d.]+$/.test(userAgent)) return 'Safari (or SFSafariViewController)';
+        return 'Unknown in-app on iOS (no Safari/ at the end of the UA)';
       }
       if (isAndroid) {
-        if (/; wv\)/.test(userAgent)) return 'Невідомий in-app на Android (WebView, маркер wv)';
-        return 'Браузер Android';
+        if (/; wv\)/.test(userAgent)) return 'Unknown in-app on Android (WebView, wv marker)';
+        return 'Android browser';
       }
-      return 'Не мобільний';
+      return 'Not mobile';
     }
 
     function targetUrl(from) {
@@ -110,11 +110,11 @@
         textarea.select();
         var copied = document.execCommand('copy');
         document.body.removeChild(textarea);
-        log(label + (copied ? ': скопійовано (execCommand)' : ': не вдалося скопіювати'));
+        log(label + (copied ? ': copied (execCommand)' : ': copy failed'));
       }
       if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(text).then(
-          function () { log(label + ': скопійовано (clipboard API)'); },
+          function () { log(label + ': copied (clipboard API)'); },
           fallback
         );
       } else {
@@ -124,14 +124,14 @@
 
     // A redirect gives no callback; the page going to background is the only hint that another app opened.
     function redirect(url, label) {
-      log(label + ': перехід на ' + url);
+      log(label + ': navigating to ' + url);
       var hidden = false;
       function onHide() { hidden = true; }
       document.addEventListener('visibilitychange', onHide, { once: true });
       location.href = url;
       setTimeout(function () {
         document.removeEventListener('visibilitychange', onHide);
-        log(label + (hidden ? ': сторінка пішла у фон, схоже, щось відкрилось' : ': за 2 с нічого не відкрилось'));
+        log(label + (hidden ? ': page went to background, something likely opened' : ': nothing opened within 2 s'));
       }, 2000);
     }
 
@@ -155,7 +155,7 @@
     if (params.get('from')) {
       var banner = document.getElementById('from-banner');
       banner.hidden = false;
-      banner.textContent = 'Відкрито після редіректу: ' + params.get('from');
+      banner.textContent = 'Opened after redirect: ' + params.get('from');
     }
 
     bindRedirect('x-safari', safariUrl, 'x-safari-https');
@@ -168,15 +168,15 @@
       copyText(userAgent, 'User agent');
     });
     document.getElementById('copy-link').addEventListener('click', function () {
-      copyText(targetUrl('copy-link'), 'Посилання');
+      copyText(targetUrl('copy-link'), 'Link');
     });
     document.getElementById('share').addEventListener('click', function () {
       if (!navigator.share) {
-        log('Share: navigator.share недоступний');
+        log('Share: navigator.share is not available');
         return;
       }
       navigator.share({ url: targetUrl('share') }).then(
-        function () { log('Share: шторка відкрилась і дія виконана'); },
+        function () { log('Share: sheet opened and an action completed'); },
         function (error) { log('Share: ' + error.name); }
       );
     });
@@ -190,8 +190,8 @@
         requestAnimationFrame(function () {
           if (!autofillDetected && input.matches(autofillSelector)) {
             autofillDetected = true;
-            document.getElementById('autofill-status').textContent = 'спрацював (' + input.id + ')';
-            log('Autofill: спрацював у полі ' + input.id);
+            document.getElementById('autofill-status').textContent = 'triggered (' + input.id + ')';
+            log('Autofill: triggered in field ' + input.id);
           }
         });
       });
@@ -201,13 +201,13 @@
       var autoUrl = isIos ? safariUrl : isAndroid ? intentUrl : null;
       if (/Line\//.test(userAgent)) autoUrl = targetUrl('line-param-auto') + '&openExternalBrowser=1';
       if (autoUrl) {
-        redirect(autoUrl, 'Авто-редірект');
+        redirect(autoUrl, 'Auto-redirect');
       } else {
-        log('Авто-редірект: не мобільний пристрій, пропущено');
+        log('Auto-redirect: not a mobile device, skipped');
       }
     }
 
-    log('Сторінка завантажена: ' + detectContext());
+    log('Page loaded: ' + detectContext());
   </script>
 </body>
 </html>
