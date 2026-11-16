@@ -1,0 +1,213 @@
+<!doctype html>
+<html lang="uk">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>In-app redirect test</title>
+  <style>
+    body { margin: 0; padding: 16px; font: 16px/1.4 -apple-system, system-ui, sans-serif; background: #fff; color: #111; }
+    h1 { font-size: 20px; margin: 0 0 12px; }
+    h2 { font-size: 16px; margin: 20px 0 8px; }
+    section { border: 1px solid #ddd; border-radius: 8px; padding: 12px; margin-bottom: 12px; }
+    .ua { font: 12px/1.4 monospace; word-break: break-all; background: #f4f4f4; padding: 8px; border-radius: 4px; }
+    .banner { background: #e5f4e4; padding: 8px; border-radius: 4px; font-weight: bold; }
+    .button { display: block; width: 100%; box-sizing: border-box; margin: 8px 0; padding: 12px; font-size: 16px; text-align: center; border: 1px solid #1a73e8; border-radius: 6px; background: #1a73e8; color: #fff; text-decoration: none; }
+    .button.secondary { background: #fff; color: #1a73e8; }
+    label { display: block; margin: 8px 0 4px; font-size: 14px; }
+    input { width: 100%; box-sizing: border-box; padding: 10px; font-size: 16px; border: 1px solid #aaa; border-radius: 4px; }
+    #log { font: 12px/1.5 monospace; white-space: pre-wrap; background: #f4f4f4; padding: 8px; border-radius: 4px; min-height: 40px; }
+  </style>
+</head>
+<body>
+  <h1>In-app redirect test</h1>
+
+  <p id="from-banner" class="banner" hidden></p>
+
+  <section>
+    <h2>1. Браузер</h2>
+    <p>Визначено: <b id="context"></b></p>
+    <div id="ua" class="ua"></div>
+    <button class="button secondary" id="copy-ua" type="button">Скопіювати user agent</button>
+  </section>
+
+  <section>
+    <h2>2. Autofill</h2>
+    <p>Тапни в поле номера картки і вибери збережену картку.</p>
+    <form autocomplete="on" onsubmit="return false">
+      <label for="cc-name">Ім'я на картці</label>
+      <input id="cc-name" name="cc-name" autocomplete="cc-name">
+      <label for="cc-number">Номер картки</label>
+      <input id="cc-number" name="cc-number" autocomplete="cc-number" inputmode="numeric">
+      <label for="cc-exp">Термін дії</label>
+      <input id="cc-exp" name="cc-exp" autocomplete="cc-exp" placeholder="MM/YY">
+      <label for="cc-csc">CVC</label>
+      <input id="cc-csc" name="cc-csc" autocomplete="cc-csc" inputmode="numeric">
+    </form>
+    <p>Autofill: <b id="autofill-status">ще не спрацював</b></p>
+  </section>
+
+  <section>
+    <h2>3. Редірект по кнопці</h2>
+    <a class="button" id="x-safari">Відкрити в Safari (x-safari-https://)</a>
+    <a class="button" id="google-chrome">Відкрити в Chrome iOS (googlechromes://)</a>
+    <a class="button" id="intent">Відкрити в Chrome Android (intent://)</a>
+    <a class="button" id="line-external">LINE: openExternalBrowser=1</a>
+    <button class="button secondary" id="copy-link" type="button">Скопіювати посилання</button>
+    <button class="button secondary" id="share" type="button">Поділитися (navigator.share)</button>
+  </section>
+
+  <section>
+    <h2>4. Редірект без тапу</h2>
+    <p>Відкрий цю сторінку з <code>?auto=1</code>: редірект спробує спрацювати одразу після завантаження.</p>
+    <a class="button secondary" id="auto-link">Перезавантажити з ?auto=1</a>
+  </section>
+
+  <section>
+    <h2>Лог</h2>
+    <div id="log"></div>
+  </section>
+
+  <script>
+    var userAgent = navigator.userAgent;
+    var params = new URLSearchParams(location.search);
+    var pageUrl = location.origin + location.pathname;
+    var isIos = /iPhone|iPad|iPod/.test(userAgent);
+    var isAndroid = /Android/.test(userAgent);
+
+    function log(message) {
+      var time = new Date().toLocaleTimeString();
+      document.getElementById('log').textContent += time + '  ' + message + '\n';
+    }
+
+    function detectContext() {
+      if (/Line\//.test(userAgent)) return 'LINE (in-app)';
+      if (/Instagram/.test(userAgent)) return 'Instagram (in-app)';
+      if (/FBAN|FBAV|FB_IAB/.test(userAgent)) return 'Facebook (in-app)';
+      if (/YJApp/.test(userAgent)) return 'Yahoo! JAPAN (in-app)';
+      if (isIos) {
+        if (/CriOS/.test(userAgent)) return 'Chrome iOS';
+        if (/FxiOS/.test(userAgent)) return 'Firefox iOS';
+        if (/EdgiOS/.test(userAgent)) return 'Edge iOS';
+        if (/Safari\/[\d.]+$/.test(userAgent)) return 'Safari (або SFSafariViewController)';
+        return 'Невідомий in-app на iOS (немає Safari/ в кінці UA)';
+      }
+      if (isAndroid) {
+        if (/; wv\)/.test(userAgent)) return 'Невідомий in-app на Android (WebView, маркер wv)';
+        return 'Браузер Android';
+      }
+      return 'Не мобільний';
+    }
+
+    function targetUrl(from) {
+      return pageUrl + '?from=' + encodeURIComponent(from);
+    }
+
+    function copyText(text, label) {
+      function fallback() {
+        var textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        var copied = document.execCommand('copy');
+        document.body.removeChild(textarea);
+        log(label + (copied ? ': скопійовано (execCommand)' : ': не вдалося скопіювати'));
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(
+          function () { log(label + ': скопійовано (clipboard API)'); },
+          fallback
+        );
+      } else {
+        fallback();
+      }
+    }
+
+    // A redirect gives no callback; the page going to background is the only hint that another app opened.
+    function redirect(url, label) {
+      log(label + ': перехід на ' + url);
+      var hidden = false;
+      function onHide() { hidden = true; }
+      document.addEventListener('visibilitychange', onHide, { once: true });
+      location.href = url;
+      setTimeout(function () {
+        document.removeEventListener('visibilitychange', onHide);
+        log(label + (hidden ? ': сторінка пішла у фон, схоже, щось відкрилось' : ': за 2 с нічого не відкрилось'));
+      }, 2000);
+    }
+
+    function bindRedirect(id, url, label) {
+      var link = document.getElementById(id);
+      link.href = url;
+      link.addEventListener('click', function (event) {
+        event.preventDefault();
+        redirect(url, label);
+      });
+    }
+
+    var safariUrl = 'x-safari-' + targetUrl('x-safari');
+    var chromeIosUrl = targetUrl('googlechromes').replace(/^https:/, 'googlechromes:');
+    var intentUrl = 'intent://' + location.host + location.pathname + '?from=intent#Intent;scheme=https;package=com.android.chrome;end';
+    var lineUrl = targetUrl('line-param') + '&openExternalBrowser=1';
+
+    document.getElementById('context').textContent = detectContext();
+    document.getElementById('ua').textContent = userAgent;
+
+    if (params.get('from')) {
+      var banner = document.getElementById('from-banner');
+      banner.hidden = false;
+      banner.textContent = 'Відкрито після редіректу: ' + params.get('from');
+    }
+
+    bindRedirect('x-safari', safariUrl, 'x-safari-https');
+    bindRedirect('google-chrome', chromeIosUrl, 'googlechromes');
+    bindRedirect('intent', intentUrl, 'intent');
+    bindRedirect('line-external', lineUrl, 'LINE param');
+    document.getElementById('auto-link').href = pageUrl + '?auto=1';
+
+    document.getElementById('copy-ua').addEventListener('click', function () {
+      copyText(userAgent, 'User agent');
+    });
+    document.getElementById('copy-link').addEventListener('click', function () {
+      copyText(targetUrl('copy-link'), 'Посилання');
+    });
+    document.getElementById('share').addEventListener('click', function () {
+      if (!navigator.share) {
+        log('Share: navigator.share недоступний');
+        return;
+      }
+      navigator.share({ url: targetUrl('share') }).then(
+        function () { log('Share: шторка відкрилась і дія виконана'); },
+        function (error) { log('Share: ' + error.name); }
+      );
+    });
+
+    var autofillSelector = (function () {
+      try { document.body.matches(':autofill'); return ':autofill'; } catch (error) { return ':-webkit-autofill'; }
+    })();
+    var autofillDetected = false;
+    document.querySelectorAll('input').forEach(function (input) {
+      input.addEventListener('input', function () {
+        requestAnimationFrame(function () {
+          if (!autofillDetected && input.matches(autofillSelector)) {
+            autofillDetected = true;
+            document.getElementById('autofill-status').textContent = 'спрацював (' + input.id + ')';
+            log('Autofill: спрацював у полі ' + input.id);
+          }
+        });
+      });
+    });
+
+    if (params.get('auto') === '1') {
+      var autoUrl = isIos ? safariUrl : isAndroid ? intentUrl : null;
+      if (/Line\//.test(userAgent)) autoUrl = targetUrl('line-param-auto') + '&openExternalBrowser=1';
+      if (autoUrl) {
+        redirect(autoUrl, 'Авто-редірект');
+      } else {
+        log('Авто-редірект: не мобільний пристрій, пропущено');
+      }
+    }
+
+    log('Сторінка завантажена: ' + detectContext());
+  </script>
+</body>
+</html>
